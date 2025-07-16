@@ -74,82 +74,123 @@ export default function SoccerField({ teams }: SoccerFieldProps) {
 
     if (fieldPlayers === 0) return positions
 
-    // Definir zonas del campo DENTRO de los límites del equipo
-    const zoneHeight = (limits.maxY - limits.minY) / 3
-
-    const zones = [
-      {
-        name: "defensa",
-        yOffset: limits.minY + zoneHeight * 0.5,
-        xPositions: [] as number[],
-      },
-      {
-        name: "medio",
-        yOffset: limits.minY + zoneHeight * 1.5,
-        xPositions: [] as number[],
-      },
-      {
-        name: "ataque",
-        yOffset: limits.minY + zoneHeight * 2.5,
-        xPositions: [] as number[],
-      },
-    ]
-
-    // Si es equipo de abajo, invertir el orden de las zonas
-    if (!isTopTeam) {
-      zones.reverse()
+    // Función para verificar si una posición está muy cerca de las existentes
+    const isPositionValid = (newPos: { x: number; y: number }, existingPositions: { x: number; y: number }[], minDistance: number = 12) => {
+      return existingPositions.every(pos => {
+        const distance = Math.sqrt(Math.pow(newPos.x - pos.x, 2) + Math.pow(newPos.y - pos.y, 2))
+        return distance >= minDistance
+      })
     }
 
-    // Distribuir jugadores en zonas según el número total
-    let playersInDefense = Math.ceil(fieldPlayers * 0.4) // 40% en defensa
-    let playersInMidfield = Math.ceil(fieldPlayers * 0.4) // 40% en medio
-    let playersInAttack = fieldPlayers - playersInDefense - playersInMidfield // resto en ataque
-
-    // Ajustar si hay muy pocos jugadores
-    if (fieldPlayers <= 2) {
-      playersInDefense = 1
-      playersInMidfield = 0
-      playersInAttack = fieldPlayers - 1
-    } else if (fieldPlayers <= 4) {
-      playersInDefense = Math.ceil(fieldPlayers / 2)
-      playersInMidfield = 0
-      playersInAttack = fieldPlayers - playersInDefense
+    // Función para generar posiciones con separación mínima
+    const generatePositionsWithSeparation = (targetPositions: { x: number; y: number }[], existingPositions: { x: number; y: number }[]) => {
+      const validPositions: { x: number; y: number }[] = []
+      
+      for (const targetPos of targetPositions) {
+        let finalPos = targetPos
+        let attempts = 0
+        const maxAttempts = 50
+        
+        // Si la posición inicial no es válida, intentar encontrar una cercana que sí lo sea
+        while (!isPositionValid(finalPos, [...existingPositions, ...validPositions]) && attempts < maxAttempts) {
+          // Generar pequeñas variaciones alrededor de la posición objetivo
+          const offsetX = (Math.random() - 0.5) * 8 // Variación de hasta 4 unidades
+          const offsetY = (Math.random() - 0.5) * 6 // Variación de hasta 3 unidades
+          
+          finalPos = {
+            x: Math.max(15, Math.min(85, targetPos.x + offsetX)),
+            y: Math.max(limits.minY + 5, Math.min(limits.maxY - 5, targetPos.y + offsetY))
+          }
+          attempts++
+        }
+        
+        validPositions.push(finalPos)
+      }
+      
+      return validPositions
     }
 
-    // Generar posiciones X simétricas para cada zona
-    const generateXPositions = (count: number): number[] => {
-      if (count === 1) return [50]
-      if (count === 2) return [35, 65]
-      if (count === 3) return [25, 50, 75]
-      if (count === 4) return [20, 40, 60, 80]
+    // Nuevo algoritmo: dividir el campo en filas y distribuir jugadores con separación mínima
+    const availableHeight = limits.maxY - limits.minY - 10 // Restar espacio del portero y márgenes
+    const startY = isTopTeam ? limits.minY + 8 : limits.minY + 5
+    
+    // Definir formaciones basadas en el número de jugadores con mejor distribución
+    let formation: { rows: number[], yOffsets: number[] } = { rows: [], yOffsets: [] }
+    
+    if (fieldPlayers === 1) {
+      formation = { rows: [1], yOffsets: [availableHeight * 0.5] }
+    } else if (fieldPlayers === 2) {
+      formation = { rows: [1, 1], yOffsets: [availableHeight * 0.25, availableHeight * 0.75] }
+    } else if (fieldPlayers === 3) {
+      formation = { rows: [2, 1], yOffsets: [availableHeight * 0.2, availableHeight * 0.8] }
+    } else if (fieldPlayers === 4) {
+      formation = { rows: [2, 2], yOffsets: [availableHeight * 0.25, availableHeight * 0.75] }
+    } else if (fieldPlayers === 5) {
+      formation = { rows: [2, 2, 1], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else if (fieldPlayers === 6) {
+      formation = { rows: [2, 2, 2], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else if (fieldPlayers === 7) {
+      formation = { rows: [3, 2, 2], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else if (fieldPlayers === 8) {
+      formation = { rows: [3, 3, 2], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else if (fieldPlayers === 9) {
+      formation = { rows: [3, 3, 3], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else if (fieldPlayers === 10) {
+      formation = { rows: [4, 3, 3], yOffsets: [availableHeight * 0.15, availableHeight * 0.5, availableHeight * 0.85] }
+    } else {
+      // Para más jugadores, distribuir en múltiples filas
+      const numRows = Math.min(4, Math.ceil(fieldPlayers / 3))
+      const playersPerRow = Math.ceil(fieldPlayers / numRows)
+      formation.rows = []
+      formation.yOffsets = []
+      
+      for (let i = 0; i < numRows; i++) {
+        const remainingPlayers = fieldPlayers - formation.rows.reduce((sum, row) => sum + row, 0)
+        const playersInThisRow = Math.min(playersPerRow, remainingPlayers)
+        if (playersInThisRow > 0) {
+          formation.rows.push(playersInThisRow)
+          formation.yOffsets.push(availableHeight * (i + 1) / (numRows + 1))
+        }
+      }
+    }
 
-      // Para más jugadores, distribuir uniformemente
+    // Generar posiciones X para cada fila con mejor distribución
+    const generateXPositionsForRow = (playersInRow: number): number[] => {
+      if (playersInRow === 1) return [50]
+      if (playersInRow === 2) return [25, 75]
+      if (playersInRow === 3) return [20, 50, 80]
+      if (playersInRow === 4) return [15, 35, 65, 85]
+      if (playersInRow === 5) return [12, 28, 50, 72, 88]
+      
+      // Para más jugadores en una fila, distribuir con mejor separación
       const positions: number[] = []
-      const spacing = 60 / (count + 1)
-      for (let i = 1; i <= count; i++) {
-        positions.push(20 + spacing * i)
+      const totalWidth = 75 // Ancho total disponible
+      const startX = 12.5 // Posición inicial
+      const spacing = totalWidth / (playersInRow - 1)
+      
+      for (let i = 0; i < playersInRow; i++) {
+        positions.push(startX + (spacing * i))
       }
       return positions
     }
 
-    // Asignar posiciones X a cada zona
-    zones[0].xPositions = generateXPositions(playersInDefense)
-    zones[1].xPositions = generateXPositions(playersInMidfield)
-    zones[2].xPositions = generateXPositions(playersInAttack)
-
-    // Crear posiciones finales - ASEGURAR que estén dentro de los límites
-    let playerIndex = 1 // Empezar desde 1 porque el portero ya está asignado
-
-    zones.forEach((zone) => {
-      zone.xPositions.forEach((xPos) => {
-        if (playerIndex < playersPerTeam) {
-          // Asegurar que la posición Y esté dentro de los límites del equipo
-          const yPos = Math.max(limits.minY, Math.min(limits.maxY, zone.yOffset))
-          positions.push({ x: xPos, y: yPos })
-          playerIndex++
-        }
-      })
+    // Generar posiciones objetivo para cada fila
+    const targetPositions: { x: number; y: number }[] = []
+    
+    formation.rows.forEach((playersInRow, rowIndex) => {
+      if (playersInRow > 0) {
+        const xPositions = generateXPositionsForRow(playersInRow)
+        const yPosition = startY + formation.yOffsets[rowIndex]
+        
+        xPositions.forEach((xPos) => {
+          targetPositions.push({ x: xPos, y: yPosition })
+        })
+      }
     })
+
+    // Aplicar el algoritmo de separación mínima
+    const finalPositions = generatePositionsWithSeparation(targetPositions, positions)
+    positions.push(...finalPositions)
 
     return positions
   }

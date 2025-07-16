@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useLoading } from './loading-context';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ group: string; player: string; id?: string; nickname?: string; avatar?: string } | null>(null);
+  const { hideLoading } = useLoading();
 
   // Cargar datos de autenticación del localStorage al iniciar
   useEffect(() => {
@@ -47,6 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('teamBalancerAuth', JSON.stringify(userData));
+    
+    // Ocultar loading cuando la autenticación sea exitosa
+    hideLoading();
   };
 
   const logout = () => {

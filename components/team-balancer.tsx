@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Users, Trophy, Star, Shuffle, UserPlus, Target, LogOut, CheckCircle, Settings, Save, Trash2, RefreshCw } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useToastContext } from "@/contexts/toast-context"
+import { useLoading } from "@/contexts/loading-context"
 import SoccerField from "@/components/soccer-field-improved"
 import ResetConfirmationModal from "@/components/ui/reset-confirmation-modal"
 import { LoadingOverlay, LoadingCard } from "@/components/ui/loading"
@@ -36,6 +37,7 @@ interface Team {
 export default function TeamBalancer() {
   const { user, logout } = useAuth()
   const { success, error, warning, info } = useToastContext()
+  const { showLoading, hideLoading } = useLoading()
 
   const [players, setPlayers] = useState<Player[]>([])
   const [selectedTarget, setSelectedTarget] = useState("")
@@ -56,6 +58,13 @@ export default function TeamBalancer() {
   const [isResettingScores, setIsResettingScores] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+
+  // Ocultar loading global cuando se complete la carga inicial
+  useEffect(() => {
+    if (!isLoadingData) {
+      hideLoading()
+    }
+  }, [isLoadingData, hideLoading])
 
   // Emojis disponibles para avatares
   const availableEmojis = [
@@ -92,6 +101,7 @@ export default function TeamBalancer() {
 
     try {
       setIsLoadingPlayers(true);
+      showLoading('Cargando jugadores del grupo...');
       const response = await fetch(`/api/groups/${user.group}/players`);
       if (!response.ok) throw new Error('Error loading group players');
       const data = await response.json();
@@ -110,6 +120,7 @@ export default function TeamBalancer() {
       error('Error al cargar los jugadores del grupo');
     } finally {
       setIsLoadingPlayers(false);
+      hideLoading();
     }
   };
 
@@ -124,6 +135,7 @@ export default function TeamBalancer() {
     console.log('Datos a enviar:', { name: newName.trim(), nickname: newNickname.trim() || newName.trim(), avatar: newAvatar })
 
     setIsUpdatingProfile(true)
+    showLoading('Actualizando perfil...')
     try {
       const response = await fetch(`/api/players/${user.id}`, {
         method: 'PUT',
@@ -153,6 +165,7 @@ export default function TeamBalancer() {
       error('Error al actualizar', err.message || 'No se pudo actualizar el perfil')
     } finally {
       setIsUpdatingProfile(false)
+      hideLoading()
     }
   }
 
@@ -225,6 +238,7 @@ export default function TeamBalancer() {
     if (!user?.group) return
 
     setIsResettingScores(true)
+    showLoading('Reseteando puntajes del grupo...')
     try {
       const response = await fetch(`/api/groups/${user.group}/reset-scores`, {
         method: 'POST',
@@ -245,6 +259,7 @@ export default function TeamBalancer() {
       error('Error al resetear puntajes', error.message || 'No se pudieron resetear los puntajes')
     } finally {
       setIsResettingScores(false)
+      hideLoading()
     }
   }
 
@@ -253,6 +268,7 @@ export default function TeamBalancer() {
     if (!user?.group) return
 
     setIsSavingVotes(true)
+    showLoading('Guardando todas las votaciones...')
     try {
       const votes = Object.entries(voteValues).map(([toPlayerId, points]) => ({
         groupId: user.group,
@@ -291,6 +307,7 @@ export default function TeamBalancer() {
       error('Error al guardar votos', error.message || 'No se pudieron guardar los votos')
     } finally {
       setIsSavingVotes(false)
+      hideLoading()
     }
   }
 
@@ -548,15 +565,15 @@ export default function TeamBalancer() {
     );
   }
 
-  if (isLoadingData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
-        <div className="max-w-7xl mx-auto">
-          <LoadingCard message="Cargando datos del grupo..." />
-        </div>
-      </div>
-    );
-  }
+  // if (isLoadingData) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
+  //       <div className="max-w-7xl mx-auto">
+  //         <LoadingCard message="Cargando datos del grupo..." />
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Users, Trophy, Star, Gamepad2, Shield, Target, Database, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { useLoading } from '@/contexts/loading-context';
 
 interface Group {
   id: string;
@@ -31,6 +32,7 @@ export default function Login() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
 
   // Cargar grupos al montar el componente
   useEffect(() => {
@@ -49,6 +51,7 @@ export default function Login() {
   const fetchGroups = async () => {
     try {
       setLoading(true);
+      showLoading('Cargando grupos disponibles...');
       const response = await fetch('/api/groups', {
         headers: {
           'Cache-Control': 'max-age=300' // Cache por 5 minutos
@@ -62,11 +65,13 @@ export default function Login() {
       setError('Error cargando grupos');
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 
   const fetchPlayers = async (groupId: string) => {
     try {
+      showLoading('Cargando jugadores del grupo...');
       const response = await fetch(`/api/groups/${groupId}/players`, {
         headers: {
           'Cache-Control': 'max-age=300' // Cache por 5 minutos
@@ -78,12 +83,15 @@ export default function Login() {
     } catch (error) {
       console.error('Error fetching players:', error);
       setError('Error cargando jugadores');
+    } finally {
+      hideLoading();
     }
   };
 
   const initializeDatabase = async () => {
     try {
       setLoading(true);
+      showLoading('Inicializando base de datos...');
       const response = await fetch('/api/init-db', { method: 'POST' });
       if (!response.ok) throw new Error('Error initializing database');
       await fetchGroups();
@@ -93,11 +101,13 @@ export default function Login() {
       setError('Error inicializando base de datos');
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 
   const handleLogin = () => {
     if (selectedGroup && selectedPlayer) {
+      showLoading('Iniciando sesión...');
       const selectedPlayerData = players.find(p => p.id === selectedPlayer);
       if (selectedPlayerData) {
         // Guardar información completa del jugador en el contexto

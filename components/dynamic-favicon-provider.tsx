@@ -6,3 +6,6 @@ export function DynamicFaviconProvider({ children }: { children: React.ReactNode
   useDynamicFavicon()
   return <>{children}</>
 }
+
+// Alias para mantener compatibilidad
+export const StaticFaviconProvider = DynamicFaviconProvider

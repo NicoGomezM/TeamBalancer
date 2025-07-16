@@ -7,48 +7,40 @@ export function useDynamicFavicon() {
     canvas.width = 32;
     canvas.height = 32;
 
-    const colors = ['#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-    let colorIndex = 0;
-
-    function drawSoccerBall(color: string) {
+    function drawTBFavicon() {
       if (!ctx) return;
       
       // Limpiar canvas
       ctx.clearRect(0, 0, 32, 32);
       
-      // Dibujar la pelota
+      // Fondo con gradiente sutil
+      const gradient = ctx.createLinearGradient(0, 0, 32, 32);
+      gradient.addColorStop(0, '#4f46e5'); // Índigo
+      gradient.addColorStop(1, '#06b6d4'); // Cyan
+      
+      // Dibujar fondo circular
       ctx.beginPath();
-      ctx.arc(16, 16, 14, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+      ctx.arc(16, 16, 15, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
       ctx.fill();
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
-      ctx.stroke();
       
-      // Dibujar el patrón de la pelota
-      ctx.strokeStyle = '#000000';
+      // Borde sutil
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
-      
-      // Líneas del patrón
-      ctx.beginPath();
-      ctx.moveTo(8, 8);
-      ctx.lineTo(24, 8);
-      ctx.moveTo(8, 24);
-      ctx.lineTo(24, 24);
-      ctx.moveTo(8, 8);
-      ctx.lineTo(8, 24);
-      ctx.moveTo(24, 8);
-      ctx.lineTo(24, 24);
-      ctx.moveTo(16, 4);
-      ctx.lineTo(16, 28);
-      ctx.moveTo(4, 16);
-      ctx.lineTo(28, 16);
       ctx.stroke();
+      
+      // Configurar texto
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Dibujar "TB" centrado
+      ctx.fillText('TB', 16, 16);
     }
 
     function updateFavicon() {
-      drawSoccerBall(colors[colorIndex]);
-      colorIndex = (colorIndex + 1) % colors.length;
+      drawTBFavicon();
       
       // Convertir canvas a data URL
       const dataURL = canvas.toDataURL();
@@ -63,14 +55,13 @@ export function useDynamicFavicon() {
       link.href = dataURL;
     }
 
-    // Actualizar favicon inmediatamente
+    // Actualizar favicon una sola vez (estático)
     updateFavicon();
     
-    // Cambiar color cada 3 segundos
-    const interval = setInterval(updateFavicon, 3000);
-    
-    return () => {
-      clearInterval(interval);
-    };
+    // No necesitamos interval para favicon estático
+    // El favicon se mantiene igual durante toda la sesión
   }, []);
 }
+
+// Alias para mantener compatibilidad con el nombre actual
+export const useStaticFavicon = useDynamicFavicon;

@@ -1,10 +1,10 @@
 "use client"
 
-import { AuthProvider, useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import Login from "@/components/login"
 import TeamBalancer from "@/components/team-balancer"
 
-function MainApp() {
+export default function Page() {
   const { user } = useAuth();
 
   if (!user) {
@@ -12,12 +12,4 @@ function MainApp() {
   }
 
   return <TeamBalancer />;
-}
-
-export default function Page() {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
 }

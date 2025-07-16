@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToastContext } from '@/contexts/toast-context'
+import { useLoading } from '@/contexts/loading-context'
 import {
     Users,
     Shield,
@@ -68,6 +69,7 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState('overview')
 
     const { success, error, warning, info } = useToastContext()
+    const { showLoading, hideLoading } = useLoading()
 
     // Iconos disponibles para grupos
     const availableIcons = [
@@ -93,6 +95,7 @@ export default function AdminPage() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
+        showLoading('Validando credenciales...')
 
         try {
             const response = await fetch('/api/admin/auth', {
@@ -114,23 +117,28 @@ export default function AdminPage() {
             error('Error de conexión', 'No se pudo verificar la contraseña')
         } finally {
             setIsLoading(false)
+            hideLoading()
         }
     }
 
     const loadGroups = async () => {
         try {
+            showLoading('Cargando grupos...')
             const response = await fetch('/api/admin/groups')
             if (response.ok) {
                 const data = await response.json()
                 setGroups(data)
             }
         } catch (err) {
-            error('Error al cargar grupos', 'No se pudieron cargar los grupos')
+            error('Error cargando grupos', 'No se pudieron cargar los grupos')
+        } finally {
+            hideLoading()
         }
     }
 
     const loadStats = async () => {
         try {
+            showLoading('Cargando estadísticas...')
             const response = await fetch('/api/admin/stats')
             if (response.ok) {
                 const data = await response.json()
@@ -138,6 +146,8 @@ export default function AdminPage() {
             }
         } catch (err) {
             error('Error al cargar estadísticas', 'No se pudieron cargar las estadísticas')
+        } finally {
+            hideLoading()
         }
     }
 
