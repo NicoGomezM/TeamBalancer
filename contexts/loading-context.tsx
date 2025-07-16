@@ -38,7 +38,7 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
   const hideLoading = useCallback(() => {
     if (loadingStartTime) {
       const elapsed = Date.now() - loadingStartTime
-      const minLoadingTime = 500 // 0.5 segundos mínimo
+      const minLoadingTime = 1500 // 1.5 segundos mínimo
       
       if (elapsed < minLoadingTime) {
         // Si no ha pasado suficiente tiempo, esperar el tiempo restante
