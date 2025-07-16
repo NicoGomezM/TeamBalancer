@@ -27,15 +27,34 @@ interface LoadingProviderProps {
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('Cargando...')
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null)
 
   const showLoading = useCallback((loadingMessage = 'Cargando datos...') => {
     setMessage(loadingMessage)
     setIsLoading(true)
+    setLoadingStartTime(Date.now())
   }, [])
 
   const hideLoading = useCallback(() => {
-    setIsLoading(false)
-  }, [])
+    if (loadingStartTime) {
+      const elapsed = Date.now() - loadingStartTime
+      const minLoadingTime = 500 // 0.5 segundos mínimo
+      
+      if (elapsed < minLoadingTime) {
+        // Si no ha pasado suficiente tiempo, esperar el tiempo restante
+        setTimeout(() => {
+          setIsLoading(false)
+          setLoadingStartTime(null)
+        }, minLoadingTime - elapsed)
+      } else {
+        // Si ya pasó suficiente tiempo, ocultar inmediatamente
+        setIsLoading(false)
+        setLoadingStartTime(null)
+      }
+    } else {
+      setIsLoading(false)
+    }
+  }, [loadingStartTime])
 
   const value = {
     isLoading,
